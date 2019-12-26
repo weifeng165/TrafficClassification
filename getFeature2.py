@@ -2,11 +2,23 @@ from scapy.all import *
 import os
 import numpy as np
 import csv
+import threading
+from multiprocessing import cpu_count
 import time
+
 
 inputDir = 'E:\\流量数据stream1000'
 
 nonVideo = ['jingdong', 'pinduoduo', 'taobao', 'QQ', 'weibo', '百度贴吧', '豆瓣', '今日头条']
+
+headers = ['maxInterval', 'minInterval', 'avgInterval', 'stdInterval', 'maxSize', 'minSize', 'avgSize', 'stdSize',
+           'maxupInterval', 'minupInterval', 'avgupInterval', 'stdupInterval',
+           'maxdownInterval', 'mindownInterval', 'avgdownInterval', 'stddownInterval', 'maxupSize', 'minupSize',
+           'avgupSize', 'stdupSize', 'maxdownSize', 'mindownSize', 'avgdownSize',
+           'stddownSize', 'allRate', 'upRate', 'downRate', '字节总数', '包的数量', '应用名称', '是否为视频']
+
+lock = threading.Lock()
+
 
 
 def feature(pcapPath, appDir):
@@ -112,39 +124,22 @@ def feature(pcapPath, appDir):
         downRate = 0
 
     singleFeature = (
-    maxInterval, minInterval, avgInterval, stdInterval, maxSize, minSize, avgSize, stdSize, maxupInterval,
-    minupInterval, avgupInterval, stdupInterval,
-    maxdownInterval, mindownInterval, avgdownInterval, stddownInterval, maxupSize, minupSize, avgupSize, stdupSize,
-    maxdownSize, mindownSize, avgdownSize,
-    stddownSize, allRate, upRate, downRate, sum(allByte), len(allByte), appDir, 0 if appDir in nonVideo else 1)
+        maxInterval, minInterval, avgInterval, stdInterval, maxSize, minSize, avgSize, stdSize, maxupInterval,
+        minupInterval, avgupInterval, stdupInterval,
+        maxdownInterval, mindownInterval, avgdownInterval, stddownInterval, maxupSize, minupSize, avgupSize, stdupSize,
+        maxdownSize, mindownSize, avgdownSize,
+        stddownSize, allRate, upRate, downRate, sum(allByte), len(allByte), appDir, 0 if appDir in nonVideo else 1)
 
     print(singleFeature)
     return singleFeature
 
 
-headers = ['maxInterval', 'minInterval', 'avgInterval', 'stdInterval', 'maxSize', 'minSize', 'avgSize', 'stdSize',
-           'maxupInterval', 'minupInterval', 'avgupInterval', 'stdupInterval',
-           'maxdownInterval', 'mindownInterval', 'avgdownInterval', 'stddownInterval', 'maxupSize', 'minupSize',
-           'avgupSize', 'stdupSize', 'maxdownSize', 'mindownSize', 'avgdownSize',
-           'stddownSize', 'allRate', 'upRate', 'downRate', '字节总数', '包的数量', '应用名称', '是否为视频']
 
-if __name__ == "__main__":
+def action(appList, writer1, writer2):
 
-    start = time.clock()
-
-    trainfile = open('E:\\流量特征csv\\train.csv', 'w', newline='')
-    writer1 = csv.writer(trainfile)
-    writer1.writerow(headers)
-
-    testfile = open('E:\\流量特征csv\\test.csv', 'w', newline='')
-    writer2 = csv.writer(testfile)
-    writer2.writerow(headers)
-
-    j = 0
-    for appDir in os.listdir(inputDir):
+    for appDir in appList:
         appPath = os.path.join(inputDir, appDir)
-        print(j, appPath)
-        j += 1
+
         trainFeatures = []
         testFeatures = []
         i = 0
@@ -155,18 +150,55 @@ if __name__ == "__main__":
                 if i >= nonVideopcapcount / 3:
                     break
             i += 1
-            print(i, end=', ')
+            print(threading.current_thread().getName(), appDir, i, end=', ')
             pcapPath = os.path.join(appPath, pcapFile)
             if (appDir not in nonVideo and i <= pcapcount * 0.7) or (
                     appDir in nonVideo and i <= nonVideopcapcount * 0.7):
                 trainFeatures.append(feature(pcapPath, appDir))
             else:
                 testFeatures.append(feature(pcapPath, appDir))
+        lock.acquire()
         writer1.writerows(trainFeatures)
         writer2.writerows(testFeatures)
+        lock.release()
+
+
+
+if __name__ == "__main__":
+
+    start = time.clock()
+
+    trainfile = open('E:\\流量特征csv\\train1.csv', 'w', newline='')
+    writer1 = csv.writer(trainfile)
+    writer1.writerow(headers)
+
+    testfile = open('E:\\流量特征csv\\test1.csv', 'w', newline='')
+    writer2 = csv.writer(testfile)
+    writer2.writerow(headers)
+
+    t = []
+    dirList = os.listdir(inputDir)
+    num = len(dirList) // 6
+    r = len(dirList) % 6
+    for _i in range(6):
+        appList = []
+        for _j in range(num):
+            appList.append(dirList[_i*num+_j])
+        if r:
+            appList.append(dirList[num*6+r-1])
+            r -= 1
+        t.append(threading.Thread(target=action, args=(appList, writer1, writer2)))
+
+    for _t in t:
+        _t.start()
+    for _t in t:
+        _t.join()
+
 
     trainfile.close()
     testfile.close()
 
     end = time.clock()
+
     print("使用时间：", end - start)
+
