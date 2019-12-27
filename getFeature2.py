@@ -6,6 +6,8 @@ import threading
 from multiprocessing import cpu_count
 import time
 
+threadNums = cpu_count() - 1
+# threadNums = 6
 
 inputDir = 'E:\\流量数据stream1000'
 
@@ -168,24 +170,24 @@ if __name__ == "__main__":
 
     start = time.clock()
 
-    trainfile = open('E:\\流量特征csv\\train1.csv', 'w', newline='')
+    trainfile = open('E:\\流量特征csv\\train2.csv', 'w', newline='')
     writer1 = csv.writer(trainfile)
     writer1.writerow(headers)
 
-    testfile = open('E:\\流量特征csv\\test1.csv', 'w', newline='')
+    testfile = open('E:\\流量特征csv\\test2.csv', 'w', newline='')
     writer2 = csv.writer(testfile)
     writer2.writerow(headers)
 
     t = []
     dirList = os.listdir(inputDir)
-    num = len(dirList) // 6
-    r = len(dirList) % 6
-    for _i in range(6):
+    num = len(dirList) // threadNums
+    r = len(dirList) % threadNums
+    for _i in range(threadNums):
         appList = []
         for _j in range(num):
             appList.append(dirList[_i*num+_j])
         if r:
-            appList.append(dirList[num*6+r-1])
+            appList.append(dirList[num*threadNums+r-1])
             r -= 1
         t.append(threading.Thread(target=action, args=(appList, writer1, writer2)))
 
