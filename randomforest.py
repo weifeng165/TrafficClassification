@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
+
 
 
 trainfile = 'E:\\流量特征csv\\train.csv'
@@ -27,6 +27,14 @@ classifier.fit(x_train, y_train)
 
 y_pred = classifier.predict(x_test)
 print(np.mean(y_pred == y_test))
+
+# 输出分类错误的
+count = 0
+for _i in range(len(y_pred)):
+    if y_pred[_i] != y_test[_i]:
+        count += 1
+        print(_i+1)
+print(count)
 
 
 
