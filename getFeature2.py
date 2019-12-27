@@ -178,6 +178,7 @@ if __name__ == "__main__":
     writer2 = csv.writer(testfile)
     writer2.writerow(headers)
 
+    # 多线程处理
     t = []
     dirList = os.listdir(inputDir)
     num = len(dirList) // threadNums
