@@ -132,11 +132,11 @@ if __name__ == "__main__":
 
     start = time.clock()
 
-    trainfile = open('E:\\流量特征csv\\train.csv', 'w', newline='')
+    trainfile = open('E:\\流量特征csv\\train1.csv', 'w', newline='')
     writer1 = csv.writer(trainfile)
     writer1.writerow(headers)
 
-    testfile = open('E:\\流量特征csv\\test.csv', 'w', newline='')
+    testfile = open('E:\\流量特征csv\\test1.csv', 'w', newline='')
     writer2 = csv.writer(testfile)
     writer2.writerow(headers)
 
